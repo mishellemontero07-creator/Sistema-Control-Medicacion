@@ -1,0 +1,290 @@
+
+@startuml
+
+skinparam classAttributeIconSize 0
+skinparam shadowing false
+skinparam nodesep 40
+skinparam ranksep 70
+
+' ===== MODULO 1: Pacientes y cuidadores =====
+
+abstract class Persona #DCE6F7 {
+  # nombreCompleto: String
+}
+
+class Paciente #DCE6F7 {
+  - cedula: String
+  - fechaNacimiento: LocalDate
+  - enfermedadesCronicas: String
+  - alergias: String
+  - condicionesRelevantes: String
+  - activo: boolean
+  - vinculos: ArrayList<VinculoCuidador>
+  - medicamentos: ArrayList<Medicamento>
+  - esquemas: ArrayList<EsquemaDosificacion>
+  - citas: ArrayList<CitaMedica>
+  - alertas: ArrayList<Alerta>
+  - advertencias: ArrayList<AdvertenciaFarmacologica>
+  - reportes: ArrayList<ReporteSeguimiento>
+
+  + validarCedula(): boolean
+  + validarFechaNacimiento(): boolean
+  + calcularEdad(): int
+
+  + vincularCuidador(cuidador: Cuidador, tipo: String, parentesco: String): boolean
+  + cambiarCuidadorPrincipal(nuevo: Cuidador): boolean
+  + getCuidadorPrincipal(): Cuidador
+  + getTomas(): ArrayList<Toma>
+
+  + agregarVinculo(vinculo: VinculoCuidador): boolean
+  + buscarVinculosDeCuidador(cuidador: Cuidador): ArrayList<VinculoCuidador>
+  + obtenerCuidadoresEnPeriodo(desde: LocalDate, hasta: LocalDate): ArrayList<Cuidador>
+  + obtenerCuidadorPrincipalEn(fecha: LocalDate): Cuidador
+  + contarCuidadoresActivos(): int
+
+  + agregarMedicamento(medicamento: Medicamento): boolean
+  + buscarMedicamentosPorNombre(nombre: String): ArrayList<Medicamento>
+  + buscarMedicamentosPorEnfermedad(enfermedad: String): ArrayList<Medicamento>
+
+  + agregarEsquema(esquema: EsquemaDosificacion): boolean
+  + buscarEsquemasPorMedicamento(medicamento: Medicamento): ArrayList<EsquemaDosificacion>
+
+  + agregarCita(cita: CitaMedica): boolean
+  + buscarCitasPorEspecialidad(especialidad: String): ArrayList<CitaMedica>
+  + contarCitasPorEspecialidad(especialidad: String): int
+  + obtenerUltimaCitaConProfesional(profesional: String): CitaMedica
+
+  + agregarAlerta(alerta: Alerta): boolean
+  + buscarAlertasPorFecha(fecha: LocalDate): ArrayList<Alerta>
+  + contarAlertasPorFecha(fecha: LocalDate): int
+  + obtenerDiaConMasAlertas(): LocalDate
+
+  + agregarAdvertencia(advertencia: AdvertenciaFarmacologica): boolean
+  + buscarAdvertenciasPendientes(): ArrayList<AdvertenciaFarmacologica>
+
+  + agregarReporte(reporte: ReporteSeguimiento): boolean
+  + buscarReportesPorPeriodo(desde: LocalDate, hasta: LocalDate): ArrayList<ReporteSeguimiento>
+}
+
+class Cuidador #DCE6F7 {
+  - telefono: String
+  - vinculos: ArrayList<VinculoCuidador>
+
+  + validarTelefono(): boolean
+  + getPacientes(): ArrayList<Paciente>
+  + agregarVinculo(vinculo: VinculoCuidador): boolean
+  + buscarVinculosPorPaciente(paciente: Paciente): ArrayList<VinculoCuidador>
+  + contarPacientesActivos(): int
+}
+
+class VinculoCuidador #DCE6F7 {
+  - paciente: Paciente
+  - cuidador: Cuidador
+  - tipo: String
+  - parentesco: String
+  - fechaInicio: LocalDate
+  - fechaFin: LocalDate
+
+  + esPrincipal(): boolean
+  + estaActivo(): boolean
+  + cerrar(fecha: LocalDate): void
+  + estabaActivoEn(fecha: LocalDate): boolean
+}
+
+note bottom of VinculoCuidador
+  Cada paciente tiene como maximo
+  un cuidador principal activo.
+  Los vinculos anteriores se conservan
+  como historial.
+end note
+
+' ===== MODULO 2: Medicamentos =====
+
+class Medicamento #E2F0D9 {
+  - nombre: String
+  - presentacion: String
+  - concentracion: double
+  - unidadMedida: String
+  - enfermedadTratada: String
+  - cantidadInicial: double
+  - cantidadActual: double
+  - diasMinimosReserva: int
+  - reposiciones: ArrayList<Double>
+  - paciente: Paciente
+
+  + descontar(cantidad: double): boolean
+  + reponer(cantidad: double): void
+  + obtenerReposiciones(): ArrayList<Double>
+  + correspondeAEnfermedad(enfermedad: String): boolean
+  + obtenerAdvertencias(): ArrayList<AdvertenciaFarmacologica>
+  + calcularDiasEstimados(consumoDiario: double): int
+  + calcularFechaAgotamiento(consumoDiario: double): LocalDate
+  + obtenerEstado(consumoDiario: double): String
+}
+
+class AdvertenciaFarmacologica #E2F0D9 {
+  - paciente: Paciente
+  - medicamento: Medicamento
+  - tipo: String
+  - descripcion: String
+  - fechaEvaluacion: LocalDate
+  - revisada: boolean
+
+  + {static} evaluar(paciente: Paciente, medicamento: Medicamento): ArrayList<AdvertenciaFarmacologica>
+  + marcarRevisada(): void
+}
+
+' ===== MODULO 3: Tratamientos =====
+
+class EsquemaDosificacion #FFF2CC {
+  - paciente: Paciente
+  - medicamento: Medicamento
+  - cantidadPorToma: double
+  - unidadDosis: String
+  - horarios: ArrayList<LocalTime>
+  - fechaInicio: LocalDate
+  - duracionDias: int
+  - toleranciaMinutos: int
+  - estado: String
+  - tomas: ArrayList<Toma>
+  - historialCambios: ArrayList<CambioTratamiento>
+
+  + validar(): boolean
+  + calcularConsumoDiario(): double
+  + getFechaFin(): LocalDate
+  + generarCalendario(): void
+  + agregarToma(toma: Toma): boolean
+  + buscarToma(fechaHora: LocalDateTime): Toma
+  + registrarCambio(cambio: CambioTratamiento): boolean
+  + buscarCambiosPorFecha(fecha: LocalDate): ArrayList<CambioTratamiento>
+  + cancelarTomasFuturas(desde: LocalDateTime): void
+  + modificar(nuevaCantidad: double, nuevosHorarios: ArrayList<LocalTime>, fechaAplicacion: LocalDate, cita: CitaMedica): boolean
+  + suspender(fechaAplicacion: LocalDate, cita: CitaMedica): boolean
+}
+
+class CambioTratamiento #FFF2CC {
+  - esquema: EsquemaDosificacion
+  - cita: CitaMedica
+  - estadoAnterior: String
+  - estadoNuevo: String
+  - detalle: String
+  - fechaAplicacion: LocalDate
+
+  + resumen(): String
+}
+
+' ===== MODULO 4: Tomas =====
+
+class Toma #FCE4D6 {
+  - esquema: EsquemaDosificacion
+  - fechaHoraProgramada: LocalDateTime
+  - fechaHoraLimite: LocalDateTime
+  - fechaHoraReal: LocalDateTime
+  - estado: String
+  - confirmadaPor: String
+  - observaciones: String
+
+  + confirmar(ahora: LocalDateTime, quien: String, observaciones: String): boolean
+  + omitir(): void
+  + cancelar(): void
+  + clasificar(ahora: LocalDateTime): String
+  + estaVencida(ahora: LocalDateTime): boolean
+}
+
+' ===== MODULO 5: Citas, alertas y reportes =====
+
+class CitaMedica #E4DFEC {
+  - paciente: Paciente
+  - fechaHora: LocalDateTime
+  - profesional: String
+  - especialidad: String
+  - motivo: String
+  - enfermedadConsultada: String
+  - estado: String
+  - tratamientoRevisado: boolean
+
+  + actualizarEstado(ahora: LocalDateTime): void
+  + marcarRealizada(): void
+  + confirmarRevisionTratamiento(): void
+  + buscarMedicamentosDeConsulta(): ArrayList<Medicamento>
+  + obtenerCambiosTratamiento(): ArrayList<CambioTratamiento>
+}
+
+class Alerta #E4DFEC {
+  - paciente: Paciente
+  - cuidadorDestinatario: Cuidador
+  - tomaAsociada: Toma
+  - tipo: String
+  - mensajeCuidador: String
+  - mensajeAdultoMayor: String
+  - prioridad: String
+  - fechaGeneracion: LocalDateTime
+  - estado: String
+  - fechaAtencion: LocalDateTime
+
+  + {static} generarAlertas(paciente: Paciente, ahora: LocalDateTime): ArrayList<Alerta>
+  + marcarAtendida(ahora: LocalDateTime): boolean
+  + cerrarPorCancelacion(ahora: LocalDateTime): void
+  + estaPendiente(): boolean
+}
+
+class ReporteSeguimiento #E4DFEC {
+  - paciente: Paciente
+  - fechaInicio: LocalDate
+  - fechaFin: LocalDate
+  - medicamentosAnalizados: ArrayList<Medicamento>
+  - tomasExigibles: int
+  - tomasATiempo: int
+  - tomasTardias: int
+  - tomasOmitidas: int
+  - tomasPendientes: int
+  - porcentajeAdherencia: double
+  - nivelAdherencia: String
+
+  + agregarMedicamentoAnalizado(medicamento: Medicamento): boolean
+  + buscarMedicamentoAnalizado(nombre: String): Medicamento
+  + generar(): boolean
+  + calcularAdherencia(): double
+  + calcularAdherenciaPorMedicamento(medicamento: Medicamento): double
+  + generarDetallePorMedicamento(medicamento: Medicamento): String
+  + obtenerMedicamentoConMasOmisiones(): Medicamento
+  + clasificarNivel(): String
+  + generarTexto(): String
+  + exportarTxt(ruta: String): boolean
+}
+
+' ===== RELACIONES =====
+
+' Herencia
+Persona <|-- Paciente
+Persona <|-- Cuidador
+
+' Modulo 1
+Paciente "1" -- "0..*" VinculoCuidador : tiene >
+Cuidador "1" -- "0..*" VinculoCuidador : tiene >
+
+' Modulo 2
+Paciente "1" -- "0..*" Medicamento : registra >
+Medicamento "1" -- "0..*" AdvertenciaFarmacologica : genera >
+Paciente "1" -- "0..*" AdvertenciaFarmacologica : recibe >
+
+' Modulo 3
+Paciente "1" -- "0..*" EsquemaDosificacion : sigue >
+EsquemaDosificacion "0..*" -- "1" Medicamento : usa >
+EsquemaDosificacion "1" *-- "0..*" Toma : contiene >
+EsquemaDosificacion "1" *-- "0..*" CambioTratamiento : registra >
+CambioTratamiento "0..*" -- "1" CitaMedica : nace de >
+
+' Modulo 4
+Toma "0..1" -- "0..*" Alerta : origina >
+
+' Modulo 5
+Paciente "1" -- "0..*" CitaMedica : asiste a >
+Paciente "1" -- "0..*" Alerta : recibe >
+Alerta "0..*" -- "0..1" Cuidador : dirigida a >
+Paciente "1" -- "0..*" ReporteSeguimiento : tiene >
+ReporteSeguimiento "0..*" -- "0..*" Medicamento : analiza >
+ReporteSeguimiento ..> Toma : cuenta
+CitaMedica ..> Medicamento : consulta
+
+@enduml
