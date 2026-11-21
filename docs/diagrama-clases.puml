@@ -53,11 +53,14 @@ class Paciente #DCE6F7 {
   + buscarCitasPorEspecialidad(especialidad: String): ArrayList<CitaMedica>
   + contarCitasPorEspecialidad(especialidad: String): int
   + obtenerUltimaCitaConProfesional(profesional: String): CitaMedica
+  + contarCitas(): int
+  + contarCitasRealizadas(): int
 
   + agregarAlerta(alerta: Alerta): boolean
   + buscarAlertasPorFecha(fecha: LocalDate): ArrayList<Alerta>
   + contarAlertasPorFecha(fecha: LocalDate): int
   + obtenerDiaConMasAlertas(): LocalDate
+  + buscarAlertasPendientes(): ArrayList<Alerta>
 
   + agregarAdvertencia(advertencia: AdvertenciaFarmacologica): boolean
   + buscarAdvertenciasPendientes(): ArrayList<AdvertenciaFarmacologica>
@@ -75,6 +78,9 @@ class Cuidador #DCE6F7 {
   + agregarVinculo(vinculo: VinculoCuidador): boolean
   + buscarVinculosPorPaciente(paciente: Paciente): ArrayList<VinculoCuidador>
   + contarPacientesActivos(): int
+  + consultarTomasPendientes(paciente: Paciente, fecha: LocalDate): ArrayList<Toma>
+  + consultarAlertasPendientes(paciente: Paciente): ArrayList<Alerta>
+  + confirmarTomaSupervisada(paciente: Paciente, toma: Toma, ahora: LocalDateTime, observaciones: String): boolean
 }
 
 class VinculoCuidador #DCE6F7 {
@@ -106,6 +112,7 @@ class Medicamento #E2F0D9 {
   - concentracion: double
   - unidadMedida: String
   - enfermedadTratada: String
+  - indicacion: String
   - cantidadInicial: double
   - cantidadActual: double
   - diasMinimosReserva: int
@@ -120,6 +127,8 @@ class Medicamento #E2F0D9 {
   + calcularDiasEstimados(consumoDiario: double): int
   + calcularFechaAgotamiento(consumoDiario: double): LocalDate
   + obtenerEstado(consumoDiario: double): String
+  + getEnfermedadTratada(): String
+  + getIndicacion(): String
 }
 
 class AdvertenciaFarmacologica #E2F0D9 {
@@ -247,6 +256,7 @@ class ReporteSeguimiento #E4DFEC {
   + calcularAdherencia(): double
   + calcularAdherenciaPorMedicamento(medicamento: Medicamento): double
   + generarDetallePorMedicamento(medicamento: Medicamento): String
+  + obtenerTomasOmitidas(): ArrayList<Toma>
   + obtenerMedicamentoConMasOmisiones(): Medicamento
   + clasificarNivel(): String
   + generarTexto(): String
