@@ -14,8 +14,8 @@ public class Toma {
     private String estado;
     private String confirmadaPor;
     private String observaciones;
+    private boolean alertaGenerada = false;
 
-    // Constructor
     public Toma(EsquemaDosificacion esquema,
                 LocalDateTime fechaHoraProgramada,
                 LocalDateTime fechaHoraLimite) {
@@ -39,9 +39,14 @@ public class Toma {
         this.estado = "PENDIENTE";
         this.confirmadaPor = "";
         this.observaciones = "";
+
+        if (!esquema.agregarToma(this)) {
+            throw new IllegalArgumentException(
+                    "No se pudo registrar la toma en el esquema");
+        }
     }
 
-    // Getters
+
     public EsquemaDosificacion getEsquema() {
         return esquema;
     }
@@ -70,7 +75,7 @@ public class Toma {
         return observaciones;
     }
 
-    // Confirmar una toma
+
     public boolean confirmar(LocalDateTime hora,
                              String quien,
                              String observaciones) {
@@ -91,16 +96,30 @@ public class Toma {
             return false;
         }
 
-        if (hora.isBefore(fechaHoraProgramada.minusMinutes(30))) {
+        int tolerancia = esquema.getToleranciaMinutos();
+
+        if (hora.isBefore(
+                fechaHoraProgramada.minusMinutes(tolerancia))) {
+            return false;
+        }
+
+        // Verificar y descontar el medicamento (cambiar esto)
+        Medicamento medicamento = esquema.getMedicamento();
+
+        if (medicamento == null) {
+            return false;
+        }
+
+        double cantidad = esquema.getCantidadPorToma();
+
+        if (!medicamento.descontarCantidad(cantidad)) {
             return false;
         }
 
         fechaHoraReal = hora;
         confirmadaPor = quien.trim();
 
-        this.observaciones = observaciones == null
-                ? ""
-                : observaciones.trim();
+        this.observaciones = observaciones == null ? "" : observaciones.trim();
 
         if (hora.isAfter(fechaHoraLimite)) {
             estado = "TARDÍA";
@@ -111,7 +130,7 @@ public class Toma {
         return true;
     }
 
-    // Omitir una toma
+
     public void omitir() {
 
         if (fechaHoraReal == null && !estado.equals("CANCELADA")) {
@@ -119,7 +138,7 @@ public class Toma {
         }
     }
 
-    // Cancelar una toma
+
     public void cancelar() {
 
         if (estado.equals("PENDIENTE")) {
@@ -127,7 +146,7 @@ public class Toma {
         }
     }
 
-    // Clasificar una toma
+
     public String clasificar() {
 
         if (fechaHoraReal != null) {
@@ -142,7 +161,7 @@ public class Toma {
         return estado;
     }
 
-    // Comprobar si una toma está vencida
+
     public boolean estaVencida(LocalDateTime ahora) {
 
         if (ahora == null) {
@@ -154,4 +173,48 @@ public class Toma {
                 && !estado.equals("OMITIDA")
                 && ahora.isAfter(fechaHoraLimite);
     }
+    // Comprobar si debe generarse una alerta por retraso (cambiar esto)
+    public boolean debeGenerarAlerta(LocalDateTime ahora) {
+
+        if (ahora == null) {
+            return false;
+        }
+
+        if (fechaHoraReal != null) {
+            return false;
+        }
+
+        if (estado.equals("CANCELADA") || estado.equals("OMITIDA")) {
+            return false;
+        }
+
+        int tolerancia = esquema.getToleranciaMinutos();
+
+        LocalDateTime limiteAlerta =
+                fechaHoraProgramada.plusMinutes(tolerancia);
+
+        return ahora.isAfter(limiteAlerta);
+    }
+    // Generar alerta cuando la toma supera la tolerancia
+    public Alerta generarAlerta(LocalDateTime ahora) {
+
+        if (!debeGenerarAlerta(ahora)) {
+            return null;
+        }
+
+        if (alertaGenerada) {
+            return null;
+        }
+
+        alertaGenerada = true;
+
+        return new Alerta(
+                esquema.getPaciente(),
+                this,
+                "TOMA RETRASADA",
+                "El paciente tiene una toma pendiente de confirmar.",
+                "ALTA"
+        );
+    }
+
 }
