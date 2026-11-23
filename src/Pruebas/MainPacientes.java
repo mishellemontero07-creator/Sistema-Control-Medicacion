@@ -1,4 +1,4 @@
-package interfaz;
+package Pruebas;
 
 import java.time.LocalDate;
 import java.util.ArrayList;
