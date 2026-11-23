@@ -39,7 +39,7 @@ public class Main {
                     break;
 
                 case "3":
-                    PruebaTratamientos.main(args);
+                    MenuTratamientos.iniciar(sc);
                     break;
 
                 case "4":
