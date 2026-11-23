@@ -15,6 +15,7 @@ public class Medicamento {
     private double cantidadInicial;
     private double cantidadActual;
     private int diasMinimosReserva;
+    private String indicacion;
 
     private ArrayList<Double> reposiciones = new ArrayList<>();
     private Paciente paciente;
