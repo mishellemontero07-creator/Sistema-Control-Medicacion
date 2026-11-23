@@ -128,5 +128,16 @@ public class Medicamento {
     }
 
 
+    // Devuelve el nombre del medicamento.
+    public String getNombre() {
+        return nombre;
+    }
+
+    // Permite descontar una cantidad desde el modulo de tomas.
+    public boolean descontarCantidad(double cantidad) {
+        return descontar(cantidad);
+    }
+
+
 
 }

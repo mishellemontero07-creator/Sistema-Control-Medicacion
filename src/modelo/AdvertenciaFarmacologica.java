@@ -78,4 +78,12 @@ public class AdvertenciaFarmacologica {
     public void marcarRevisada() {
         this.revisada = true;
     }
+
+
+
+    // Permite consultar si la advertencia ya fue revisada.
+    public boolean isRevisada() {
+        return revisada;
+    }
+
 }

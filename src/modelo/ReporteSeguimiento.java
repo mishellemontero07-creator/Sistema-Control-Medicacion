@@ -20,4 +20,15 @@ public class ReporteSeguimiento {
     private double porcentajeAdherencia;
     private String nivelAdherencia;
 
+
+    // Devuelve la fecha inicial del reporte.
+    public LocalDate getFechaInicio() {
+        return fechaInicio;
+    }
+
+    // Devuelve la fecha final del reporte.
+    public LocalDate getFechaFin() {
+        return fechaFin;
+    }
+
 }

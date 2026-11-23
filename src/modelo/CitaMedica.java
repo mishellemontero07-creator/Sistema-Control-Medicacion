@@ -14,4 +14,22 @@ public class CitaMedica {
     private String estado;
     private boolean tratamientoRevisado;
 
+
+    public String getEspecialidad() {
+        return especialidad;
+    }
+
+    public String getProfesional() {
+        return profesional;
+    }
+
+    public LocalDateTime getFechaHora() {
+        return fechaHora;
+    }
+
+    public String getEstado() {
+        return estado;
+    }
+
+
 }

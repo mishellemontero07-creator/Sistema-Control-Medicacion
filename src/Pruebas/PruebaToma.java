@@ -9,6 +9,13 @@ import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.Scanner;
 
+import modelo.Paciente;
+import modelo.Medicamento;
+import java.time.LocalDate;
+import java.time.LocalTime;
+
+
+
 public class PruebaToma {
 
     private static Scanner sc = new Scanner(System.in);
@@ -160,9 +167,41 @@ public class PruebaToma {
             return;
         }
 
-        // Esquema provisional mientras se integra el modulo de dosificacion.
-        EsquemaDosificacion esquema = new EsquemaDosificacion();
-        esquema.setToleranciaMinutos(5);
+
+        // Creamos un paciente y medicamento de prueba.
+        Paciente paciente = new Paciente(
+                "Paciente de prueba",
+                "1700000001",
+                LocalDate.of(1950, 1, 1)
+        );
+
+        Medicamento medicamento = new Medicamento(
+                "Medicamento de prueba",
+                "Tableta",
+                500,
+                "mg",
+                "Prueba",
+                "Solo para pruebas",
+                100,
+                5,
+                paciente
+        );
+
+        ArrayList<LocalTime> horarios = new ArrayList<>();
+        horarios.add(programada.toLocalTime());
+
+        // Creamos el esquema usando el constructor de Diago.
+        EsquemaDosificacion esquema = new EsquemaDosificacion(
+                paciente,
+                medicamento,
+                1,
+                "tableta",
+                horarios,
+                programada.toLocalDate(),
+                1,
+                5
+        );
+
 
         try {
             Toma toma = new Toma(esquema, programada, limite);
