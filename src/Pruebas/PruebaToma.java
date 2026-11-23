@@ -3,6 +3,12 @@ package Pruebas;
 
 import modelo.Toma;
 import modelo.EsquemaDosificacion;
+import modelo.Medicamento;
+import modelo.Paciente;
+import java.time.LocalDate;
+import java.time.LocalTime;
+import java.time.format.DateTimeFormatterBuilder;
+import java.time.format.ResolverStyle;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeParseException;
@@ -11,8 +17,8 @@ import java.util.Scanner;
 
 public class PruebaToma {
 
-    private static Scanner sc = new Scanner(System.in);
-    private static ArrayList<Toma> tomas = new ArrayList<>();
+    private static final Scanner sc = new Scanner(System.in);
+    private static final ArrayList<Toma> tomas = new ArrayList<>();
 
     public static void main(String[] args) {
 
@@ -28,7 +34,6 @@ public class PruebaToma {
             System.out.println("5. Cancelar toma");
             System.out.println("6. Consultar tomas vencidas");
             System.out.println("7. Clasificar tomas");
-            System.out.println("8. Consultar alertas");
             System.out.println("0. Salir");
             System.out.print("Seleccione una opcion: ");
 
@@ -55,9 +60,6 @@ public class PruebaToma {
                     break;
                 case "7":
                     clasificarTomas();
-                    break;
-                case "8":
-                    consultarAlertas();
                     break;
                 case "0":
                     System.out.println("Saliendo del modulo de tomas.");
@@ -106,18 +108,14 @@ public class PruebaToma {
 
     // Lectura de fechas y horas
     private static LocalDateTime leerFechaHora(String mensaje) {
-
         while (true) {
             try {
-                String fecha = leerNoVacio(
-                        mensaje + " (AAAA-MM-DDTHH:MM): "
-                );
-
-                return LocalDateTime.parse(fecha);
-
+                String fecha = leerNoVacio(mensaje + " (AAAA-MM-DDTHH:MM): ");
+                return LocalDateTime.parse(fecha, new DateTimeFormatterBuilder()
+                        .appendPattern("uuuu-M-d'T'H:m")
+                        .toFormatter().withResolverStyle(ResolverStyle.STRICT));
             } catch (DateTimeParseException e) {
-                System.out.println("Fecha u hora incorrecta.");
-                System.out.println("Ejemplo: 2026-11-22T14:30");
+                System.out.println("Fecha incorrecta. Ejemplo: 2026-11-23T14:30");
             }
         }
     }
@@ -143,37 +141,70 @@ public class PruebaToma {
     }
 
     // Registrar una toma
-    private static void registrarToma() {
-
-        System.out.println("\n--- REGISTRAR TOMA ---");
-
-        LocalDateTime programada =
-                leerFechaHora("Fecha y hora programada");
-
-        LocalDateTime limite =
-                leerFechaHora("Fecha y hora limite");
-
-        if (limite.isBefore(programada)) {
-            System.out.println(
-                    "Error: la fecha limite no puede ser anterior a la programada."
-            );
-            return;
+    private static double leerDouble(String mensaje, double minimo) {
+        while (true) {
+            try {
+                System.out.print(mensaje);
+                double valor = Double.parseDouble(sc.nextLine().trim());
+                if (Double.isFinite(valor) && valor >= minimo) return valor;
+                System.out.println("Ingrese un valor mayor o igual a " + minimo);
+            } catch (NumberFormatException e) {
+                System.out.println("Error: ingrese un numero decimal valido.");
+            }
         }
+    }
 
-        // Esquema provisional mientras se integra el modulo de dosificacion.
-        EsquemaDosificacion esquema = new EsquemaDosificacion();
-        esquema.setToleranciaMinutos(5);
-
+    private static void registrarToma() {
+        System.out.println("\n--- REGISTRAR TOMA ---");
         try {
-            Toma toma = new Toma(esquema, programada, limite);
-
+            String nombrePaciente = leerNoVacio("Nombre del paciente: ");
+            String cedula = leerNoVacio("Cedula ecuatoriana: ");
+            while (!Paciente.validarCedulaIngresada(cedula)) {
+                System.out.println("Cedula invalida.");
+                cedula = leerNoVacio("Cedula ecuatoriana: ");
+            }
+            LocalDate nacimiento;
+            while (true) {
+                try {
+                    nacimiento = LocalDate.parse(leerNoVacio("Nacimiento (AAAA-MM-DD): "));
+                    if (!nacimiento.isAfter(LocalDate.now())) break;
+                    System.out.println("La fecha no puede ser futura.");
+                } catch (DateTimeParseException e) {
+                    System.out.println("Fecha invalida. Ejemplo: 1950-08-15");
+                }
+            }
+            Paciente paciente = new Paciente(nombrePaciente, cedula, nacimiento);
+            String nombre = leerNoVacio("Medicamento: ");
+            String presentacion = leerNoVacio("Presentacion: ");
+            double concentracion = leerDouble("Concentracion: ", 0.01);
+            String unidad = leerNoVacio("Unidad de medida: ");
+            String enfermedad = leerNoVacio("Enfermedad tratada: ");
+            String indicacion = leerNoVacio("Indicacion: ");
+            double inventario = leerDouble("Cantidad disponible: ", 0.01);
+            int reserva = leerEntero("Dias minimos de reserva: ", 0);
+            Medicamento medicamento = new Medicamento(nombre, presentacion, concentracion,
+                    unidad, enfermedad, indicacion, inventario, reserva, paciente);
+            double dosis = leerDouble("Cantidad por toma: ", 0.01);
+            String unidadDosis = leerNoVacio("Unidad de dosis: ");
+            int tolerancia = leerEntero("Tolerancia (5 a 10 minutos): ", 5);
+            while (tolerancia > 10) {
+                System.out.println("La tolerancia debe estar entre 5 y 10 minutos.");
+                tolerancia = leerEntero("Tolerancia (5 a 10 minutos): ", 5);
+            }
+            LocalDateTime programada = leerFechaHora("Fecha y hora programada");
+            ArrayList<LocalTime> horarios = new ArrayList<>();
+            horarios.add(programada.toLocalTime());
+            EsquemaDosificacion esquema = new EsquemaDosificacion(paciente, medicamento,
+                    dosis, unidadDosis, horarios, programada.toLocalDate(), 1, tolerancia);
+            if (!esquema.validar()) {
+                System.out.println("Datos del esquema invalidos.");
+                return;
+            }
+            Toma toma = new Toma(esquema, programada, programada.plusMinutes(tolerancia));
             tomas.add(toma);
-
-            System.out.println("Toma registrada correctamente.");
-            System.out.println("Estado inicial: " + toma.getEstado());
-
+            System.out.println("Toma registrada correctamente. Estado: " + toma.getEstado());
         } catch (IllegalArgumentException e) {
-            System.out.println("No se pudo registrar la toma: " + e.getMessage());
+            System.out.println("No se pudo registrar: " + e.getMessage());
         }
     }
 
@@ -323,29 +354,4 @@ public class PruebaToma {
         }
     }
 
-    // Consultar alertas de tomas retrasadas
-    private static void consultarAlertas() {
-
-        System.out.println("\n--- ALERTAS DE TOMAS ---");
-
-        LocalDateTime ahora = LocalDateTime.now();
-        boolean encontrada = false;
-
-        for (int i = 0; i < tomas.size(); i++) {
-
-            Toma toma = tomas.get(i);
-
-            if (toma.debeGenerarAlerta(ahora)) {
-
-                System.out.println("Toma #" + (i + 1));
-                System.out.println("Tiene una toma retrasada.");
-
-                encontrada = true;
-            }
-        }
-
-        if (!encontrada) {
-            System.out.println("No existen alertas pendientes.");
-        }
-    }
 }

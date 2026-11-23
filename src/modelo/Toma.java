@@ -1,5 +1,4 @@
 
-
 package modelo;
 
 import java.time.LocalDateTime;
@@ -14,7 +13,6 @@ public class Toma {
     private String estado;
     private String confirmadaPor;
     private String observaciones;
-    private boolean alertaGenerada = false;
 
     public Toma(EsquemaDosificacion esquema,
                 LocalDateTime fechaHoraProgramada,
@@ -103,7 +101,7 @@ public class Toma {
             return false;
         }
 
-        // Verificar y descontar el medicamento (cambiar esto)
+        // Descontar inventario con el metodo real de Medicamento.
         Medicamento medicamento = esquema.getMedicamento();
 
         if (medicamento == null) {
@@ -112,7 +110,7 @@ public class Toma {
 
         double cantidad = esquema.getCantidadPorToma();
 
-        if (!medicamento.descontarCantidad(cantidad)) {
+        if (!medicamento.descontar(cantidad)) {
             return false;
         }
 
@@ -133,7 +131,7 @@ public class Toma {
 
     public void omitir() {
 
-        if (fechaHoraReal == null && !estado.equals("CANCELADA")) {
+        if (fechaHoraReal == null && estado.equals("PENDIENTE")) {
             estado = "OMITIDA";
         }
     }
@@ -173,48 +171,4 @@ public class Toma {
                 && !estado.equals("OMITIDA")
                 && ahora.isAfter(fechaHoraLimite);
     }
-    // Comprobar si debe generarse una alerta por retraso (cambiar esto)
-    public boolean debeGenerarAlerta(LocalDateTime ahora) {
-
-        if (ahora == null) {
-            return false;
-        }
-
-        if (fechaHoraReal != null) {
-            return false;
-        }
-
-        if (estado.equals("CANCELADA") || estado.equals("OMITIDA")) {
-            return false;
-        }
-
-        int tolerancia = esquema.getToleranciaMinutos();
-
-        LocalDateTime limiteAlerta =
-                fechaHoraProgramada.plusMinutes(tolerancia);
-
-        return ahora.isAfter(limiteAlerta);
-    }
-    // Generar alerta cuando la toma supera la tolerancia
-    public Alerta generarAlerta(LocalDateTime ahora) {
-
-        if (!debeGenerarAlerta(ahora)) {
-            return null;
-        }
-
-        if (alertaGenerada) {
-            return null;
-        }
-
-        alertaGenerada = true;
-
-        return new Alerta(
-                esquema.getPaciente(),
-                this,
-                "TOMA RETRASADA",
-                "El paciente tiene una toma pendiente de confirmar.",
-                "ALTA"
-        );
-    }
-
 }
