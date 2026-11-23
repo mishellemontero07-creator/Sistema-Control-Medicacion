@@ -54,7 +54,7 @@ public class MainPacientes {
         return texto;
     }
 
-    private static Paciente buscarPaciente(String cedula) {
+    public static Paciente buscarPaciente(String cedula) {
         for (Paciente paciente : pacientes) {
             if (paciente.getCedula().equals(cedula)) {
                 return paciente;

@@ -35,7 +35,7 @@ public class Main {
                     break;
 
                 case "2":
-                    PruebaMedicamentos.main(args);
+                    MenuMedicamentos.iniciar(sc);
                     break;
 
                 case "3":

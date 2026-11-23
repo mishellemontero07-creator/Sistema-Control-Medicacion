@@ -114,7 +114,7 @@ public class Paciente extends Persona {
         this.fechaNacimiento = fechaNacimiento;
     }
 
-    // Valida el texto ANTES de llamar a LocalDate.parse(), sin try-catch.
+    // Valida el texto ANTES de llamar a LocalDate.parse().
     // También comprueba los días reales de cada mes, incluidos años bisiestos.
     public static boolean validarFechaTexto(String texto) {
 
