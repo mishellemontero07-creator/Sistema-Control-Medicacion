@@ -138,6 +138,9 @@ public class Medicamento {
         return descontar(cantidad);
     }
 
-
+    // Devuelve la cantidad de medicamento que queda disponible.
+    public double getCantidadActual() {
+        return cantidadActual;
+    }
 
 }

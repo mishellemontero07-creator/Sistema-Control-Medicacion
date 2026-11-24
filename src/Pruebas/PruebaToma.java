@@ -3,32 +3,33 @@ package Pruebas;
 
 import modelo.Toma;
 import modelo.EsquemaDosificacion;
+import modelo.Paciente;
+import modelo.Medicamento;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.Scanner;
 
-import modelo.Paciente;
-import modelo.Medicamento;
-import java.time.LocalDate;
-import java.time.LocalTime;
-
-
-
 public class PruebaToma {
 
     private static Scanner sc = new Scanner(System.in);
     private static ArrayList<Toma> tomas = new ArrayList<>();
 
+    // Permite ejecutar el modulo de manera independiente.
     public static void main(String[] args) {
+        iniciar(sc);
+    }
 
+    // Usa el Scanner del menu principal para evitar lecturas duplicadas.
+    public static void iniciar(Scanner scanner) {
+        sc = scanner;
         String opcion;
 
         do {
             System.out.println("\n===== SISTEMA DE CONTROL DE MEDICACION =====");
             System.out.println("MODULO 4: REGISTRO Y SEGUIMIENTO DE TOMAS");
-            System.out.println("1. Registrar toma");
+            System.out.println("1. Cargar tomas del paciente");
             System.out.println("2. Mostrar tomas");
             System.out.println("3. Confirmar toma");
             System.out.println("4. Omitir toma");
@@ -36,7 +37,7 @@ public class PruebaToma {
             System.out.println("6. Consultar tomas vencidas");
             System.out.println("7. Clasificar tomas");
             System.out.println("8. Consultar alertas");
-            System.out.println("0. Salir");
+            System.out.println("0. Volver al menu principal");
             System.out.print("Seleccione una opcion: ");
 
             opcion = sc.nextLine().trim();
@@ -67,7 +68,7 @@ public class PruebaToma {
                     consultarAlertas();
                     break;
                 case "0":
-                    System.out.println("Saliendo del modulo de tomas.");
+                    System.out.println("Volviendo al menu principal...");
                     break;
                 default:
                     System.out.println("Opcion invalida.");
@@ -76,7 +77,7 @@ public class PruebaToma {
         } while (!opcion.equals("0"));
     }
 
-    // Lectura de texto sin aceptar campos vacios
+    // Lectura de texto sin aceptar campos vacios.
     private static String leerNoVacio(String mensaje) {
 
         System.out.print(mensaje);
@@ -91,7 +92,7 @@ public class PruebaToma {
         return texto;
     }
 
-    // Lectura de numeros enteros
+    // Lectura de numeros enteros.
     private static int leerEntero(String mensaje, int minimo) {
 
         while (true) {
@@ -106,12 +107,13 @@ public class PruebaToma {
                 System.out.println("Ingrese un numero mayor o igual a " + minimo);
 
             } catch (NumberFormatException e) {
+                // Se captura el error cuando el texto no es un entero.
                 System.out.println("Error: debe ingresar un numero entero.");
             }
         }
     }
 
-    // Lectura de fechas y horas
+    // Lectura de fechas y horas.
     private static LocalDateTime leerFechaHora(String mensaje) {
 
         while (true) {
@@ -123,17 +125,18 @@ public class PruebaToma {
                 return LocalDateTime.parse(fecha);
 
             } catch (DateTimeParseException e) {
+                // Se captura el error cuando la fecha u hora no tiene un formato valido.
                 System.out.println("Fecha u hora incorrecta.");
                 System.out.println("Ejemplo: 2026-11-22T14:30");
             }
         }
     }
 
-    // Seleccionar una toma registrada
+    // Seleccionar una toma cargada desde el paciente.
     private static Toma seleccionarToma() {
 
         if (tomas.isEmpty()) {
-            System.out.println("No existen tomas registradas.");
+            System.out.println("No existen tomas cargadas.");
             return null;
         }
 
@@ -149,103 +152,68 @@ public class PruebaToma {
         return tomas.get(numero - 1);
     }
 
-    // Registrar una toma
+    // Carga las tomas de tratamientos existentes, sin crear medicamentos de prueba.
     private static void registrarToma() {
 
-        System.out.println("\n--- REGISTRAR TOMA ---");
+        System.out.println("\n--- CARGAR TOMAS DEL PACIENTE ---");
 
-        LocalDateTime programada =
-                leerFechaHora("Fecha y hora programada");
+        String cedula = leerNoVacio("Cedula del paciente: ");
+        Paciente paciente = MainPacientes.buscarPaciente(cedula);
 
-        LocalDateTime limite =
-                leerFechaHora("Fecha y hora limite");
+        // Limpiamos el listado anterior para trabajar solo con el paciente buscado.
+        tomas.clear();
 
-        if (limite.isBefore(programada)) {
-            System.out.println(
-                    "Error: la fecha limite no puede ser anterior a la programada."
-            );
+        if (paciente == null) {
+            System.out.println("Paciente no registrado.");
             return;
         }
 
+        ArrayList<Toma> tomasProgramadas = paciente.getTomas();
 
-        // Creamos un paciente y medicamento de prueba.
-        Paciente paciente = new Paciente(
-                "Paciente de prueba",
-                "1700000001",
-                LocalDate.of(1950, 1, 1)
-        );
-
-        Medicamento medicamento = new Medicamento(
-                "Medicamento de prueba",
-                "Tableta",
-                500,
-                "mg",
-                "Prueba",
-                "Solo para pruebas",
-                100,
-                5,
-                paciente
-        );
-
-        ArrayList<LocalTime> horarios = new ArrayList<>();
-        horarios.add(programada.toLocalTime());
-
-        // Creamos el esquema usando el constructor de Diago.
-        EsquemaDosificacion esquema = new EsquemaDosificacion(
-                paciente,
-                medicamento,
-                1,
-                "tableta",
-                horarios,
-                programada.toLocalDate(),
-                1,
-                5
-        );
-
-
-        try {
-            Toma toma = new Toma(esquema, programada, limite);
-
-            tomas.add(toma);
-
-            System.out.println("Toma registrada correctamente.");
-            System.out.println("Estado inicial: " + toma.getEstado());
-
-        } catch (IllegalArgumentException e) {
-            System.out.println("No se pudo registrar la toma: " + e.getMessage());
+        if (tomasProgramadas.isEmpty()) {
+            System.out.println("El paciente no tiene tomas programadas.");
+            System.out.println("Primero registre un tratamiento y genere su calendario.");
+            return;
         }
+
+        // addAll conserva las mismas tomas, no crea copias de los objetos.
+        tomas.addAll(tomasProgramadas);
+
+        System.out.println("Paciente: " + paciente.getNombreCompleto());
+        System.out.println("Tomas cargadas: " + tomas.size());
+        mostrarTomas();
     }
 
-    // Mostrar las tomas
+    // Mostrar las tomas.
     private static void mostrarTomas() {
 
         System.out.println("\n--- TOMAS REGISTRADAS ---");
 
         if (tomas.isEmpty()) {
-            System.out.println("No existen tomas registradas.");
+            System.out.println("No existen tomas cargadas.");
             return;
         }
 
         for (int i = 0; i < tomas.size(); i++) {
 
             Toma toma = tomas.get(i);
+            EsquemaDosificacion esquema = toma.getEsquema();
+            Medicamento medicamento = esquema.getMedicamento();
 
             System.out.println("\nToma #" + (i + 1));
+            System.out.println("Medicamento: " + medicamento.getNombre());
+            System.out.println("Cantidad por toma: " + esquema.getCantidadPorToma()
+                    + " " + esquema.getUnidadDosis());
             System.out.println("Estado: " + toma.getEstado());
-            System.out.println("Programada: " +
-                    toma.getFechaHoraProgramada());
-            System.out.println("Fecha limite: " +
-                    toma.getFechaHoraLimite());
-            System.out.println("Fecha real: " +
-                    toma.getFechaHoraReal());
-            System.out.println("Confirmada por: " +
-                    toma.getConfirmadaPor());
-            System.out.println("Observaciones: " +
-                    toma.getObservaciones());
+            System.out.println("Programada: " + toma.getFechaHoraProgramada());
+            System.out.println("Fecha limite: " + toma.getFechaHoraLimite());
+            System.out.println("Fecha real: " + toma.getFechaHoraReal());
+            System.out.println("Confirmada por: " + toma.getConfirmadaPor());
+            System.out.println("Observaciones: " + toma.getObservaciones());
         }
     }
 
-    // Confirmar una toma
+    // Confirmar una toma.
     private static void confirmarToma() {
 
         System.out.println("\n--- CONFIRMAR TOMA ---");
@@ -261,26 +229,25 @@ public class PruebaToma {
         System.out.print("Observaciones (puede dejar vacio): ");
         String observaciones = sc.nextLine().trim();
 
-        LocalDateTime hora =
-                leerFechaHora("Fecha y hora de confirmacion");
+        LocalDateTime hora = leerFechaHora("Fecha y hora de confirmacion");
 
-        boolean resultado = toma.confirmar(
-                hora,
-                cuidador,
-                observaciones
-        );
+        // confirmar() ya descuenta el medicamento vinculado al esquema.
+        boolean resultado = toma.confirmar(hora, cuidador, observaciones);
 
         if (resultado) {
+            Medicamento medicamento = toma.getEsquema().getMedicamento();
+
             System.out.println("Toma confirmada correctamente.");
             System.out.println("Estado: " + toma.getEstado());
+            System.out.println("Medicamento: " + medicamento.getNombre());
+            System.out.println("Cantidad disponible: " + medicamento.getCantidadActual());
         } else {
-            System.out.println(
-                    "No se pudo confirmar. Compruebe los datos y las dependencias del esquema."
-            );
+            System.out.println("No se pudo confirmar la toma.");
+            System.out.println("Revise el estado, la fecha, la tolerancia y el stock disponible.");
         }
     }
 
-    // Omitir una toma
+    // Omitir una toma.
     private static void omitirToma() {
 
         System.out.println("\n--- OMITIR TOMA ---");
@@ -296,7 +263,7 @@ public class PruebaToma {
         System.out.println("Estado actual: " + toma.getEstado());
     }
 
-    // Cancelar una toma
+    // Cancelar una toma.
     private static void cancelarToma() {
 
         System.out.println("\n--- CANCELAR TOMA ---");
@@ -312,7 +279,7 @@ public class PruebaToma {
         System.out.println("Estado actual: " + toma.getEstado());
     }
 
-    // Consultar tomas vencidas
+    // Consultar tomas vencidas.
     private static void consultarVencidas() {
 
         System.out.println("\n--- TOMAS VENCIDAS ---");
@@ -325,12 +292,8 @@ public class PruebaToma {
             Toma toma = tomas.get(i);
 
             if (toma.estaVencida(ahora)) {
-
                 System.out.println("Toma #" + (i + 1));
-                System.out.println(
-                        "Fecha limite: " + toma.getFechaHoraLimite()
-                );
-
+                System.out.println("Fecha limite: " + toma.getFechaHoraLimite());
                 encontrada = true;
             }
         }
@@ -340,29 +303,26 @@ public class PruebaToma {
         }
     }
 
-    // Clasificar las tomas
+    // Clasificar las tomas.
     private static void clasificarTomas() {
 
         System.out.println("\n--- CLASIFICACION DE TOMAS ---");
 
         if (tomas.isEmpty()) {
-            System.out.println("No existen tomas registradas.");
+            System.out.println("No existen tomas cargadas.");
             return;
         }
 
         for (int i = 0; i < tomas.size(); i++) {
 
             Toma toma = tomas.get(i);
-
             String estado = toma.clasificar();
 
-            System.out.println(
-                    "Toma #" + (i + 1) + ": " + estado
-            );
+            System.out.println("Toma #" + (i + 1) + ": " + estado);
         }
     }
 
-    // Consultar alertas de tomas retrasadas
+    // Consultar alertas de tomas retrasadas.
     private static void consultarAlertas() {
 
         System.out.println("\n--- ALERTAS DE TOMAS ---");
@@ -375,10 +335,8 @@ public class PruebaToma {
             Toma toma = tomas.get(i);
 
             if (toma.debeGenerarAlerta(ahora)) {
-
                 System.out.println("Toma #" + (i + 1));
                 System.out.println("Tiene una toma retrasada.");
-
                 encontrada = true;
             }
         }

@@ -20,7 +20,7 @@ public class MenuMedicamentos {
             System.out.println("\n===== GESTION DE MEDICAMENTOS =====");
             System.out.println("1. Registrar medicamento");
             System.out.println("2. Listar medicamentos");
-            System.out.println("3. Descontar medicamento");
+            System.out.println("3. Descontar medicamento (ajuste manual)");
             System.out.println("4. Reponer medicamento");
             System.out.println("5. Consultar disponibilidad");
             System.out.println("0. Volver al menu principal");
@@ -69,11 +69,13 @@ public class MenuMedicamentos {
         String nombre = leerTexto(sc, "Nombre del medicamento:");
         String presentacion = leerTexto(sc, "Presentacion (ejemplo: Tabletas):");
         double concentracion = leerDouble(sc, "Concentracion (ejemplo: 50):");
-        String unidad = leerTexto(sc, "Unidad (ejemplo: mg):");
+        String unidad = leerTexto(sc, "Unidad de concentracion (ejemplo: mg):");
         String enfermedad = leerTexto(sc, "Enfermedad tratada:");
         String indicaciones = leerTexto(sc, "Indicaciones:");
         int cantidad = leerEntero(sc, "Cantidad disponible:");
-        int minimo = leerEntero(sc, "Stock minimo:");
+
+        // Este valor representa dias de reserva, no unidades de stock.
+        int minimo = leerEntero(sc, "Dias minimos de reserva:");
 
         Medicamento medicamento = new Medicamento(
                 nombre, presentacion, concentracion, unidad,
@@ -81,9 +83,15 @@ public class MenuMedicamentos {
         );
 
         if (paciente.agregarMedicamento(medicamento)) {
+
+            // Guardamos el mismo objeto asociado al paciente.
             medicamentos.add(medicamento);
             propietarios.add(paciente);
+
             System.out.println("Medicamento registrado correctamente.");
+            System.out.println("Cantidad disponible: "
+                    + medicamento.getCantidadActual());
+
         } else {
             System.out.println("No se pudo registrar el medicamento.");
         }
@@ -99,11 +107,14 @@ public class MenuMedicamentos {
         }
 
         for (int i = 0; i < medicamentos.size(); i++) {
+
             Medicamento medicamento = medicamentos.get(i);
             Paciente paciente = propietarios.get(i);
 
             System.out.println((i + 1) + ". " + medicamento.getNombre()
-                    + " | Paciente: " + paciente.getNombreCompleto());
+                    + " | Paciente: " + paciente.getNombreCompleto()
+                    + " | Cantidad disponible: "
+                    + medicamento.getCantidadActual());
         }
     }
 
@@ -127,48 +138,67 @@ public class MenuMedicamentos {
 
     private static void descontar(Scanner sc) {
 
-        System.out.println("\n--- DESCONTAR MEDICAMENTO ---");
+        System.out.println("\n--- DESCONTAR MEDICAMENTO (AJUSTE MANUAL) ---");
+
+        System.out.println("Las tomas confirmadas se descuentan automaticamente.");
+
         Medicamento medicamento = seleccionar(sc);
 
         if (medicamento == null) {
             return;
         }
 
-        int cantidad = leerEntero(sc, "Cantidad a descontar:");
+        double cantidad = leerDouble(sc, "Cantidad a descontar:");
 
         if (medicamento.descontar(cantidad)) {
+
             System.out.println("Cantidad descontada correctamente.");
+            System.out.println("Cantidad restante: "
+                    + medicamento.getCantidadActual());
+
         } else {
-            System.out.println("No se pudo descontar esa cantidad.");
+            System.out.println(
+                    "No se pudo descontar esa cantidad. Revise el stock disponible.");
         }
     }
 
     private static void reponer(Scanner sc) {
 
         System.out.println("\n--- REPONER MEDICAMENTO ---");
+
         Medicamento medicamento = seleccionar(sc);
 
         if (medicamento == null) {
             return;
         }
 
-        int cantidad = leerEntero(sc, "Cantidad a reponer:");
+        double cantidad = leerDouble(sc, "Cantidad a reponer:");
+
         medicamento.reponer(cantidad);
 
         System.out.println("Reposicion realizada.");
+        System.out.println("Cantidad disponible: "
+                + medicamento.getCantidadActual());
     }
 
     private static void consultar(Scanner sc) {
 
         System.out.println("\n--- CONSULTAR DISPONIBILIDAD ---");
+
         Medicamento medicamento = seleccionar(sc);
 
         if (medicamento == null) {
             return;
         }
 
+        // Consulta el stock actualizado del medicamento registrado.
         System.out.println("Medicamento: " + medicamento.getNombre());
+
+        System.out.println("Cantidad disponible: "
+                + medicamento.getCantidadActual());
+
         System.out.println("Estado: " + medicamento.obtenerEstado(1));
+
         System.out.println("Dias estimados si se utiliza una unidad diaria: "
                 + medicamento.calcularDiasEstimados(1));
     }

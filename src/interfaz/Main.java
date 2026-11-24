@@ -43,7 +43,7 @@ public class Main {
                     break;
 
                 case "4":
-                    PruebaToma.main(args);
+                    PruebaToma.iniciar(sc);
                     break;
 
                 case "0":
